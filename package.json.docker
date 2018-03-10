@@ -1,7 +1,7 @@
 {
-  "name": "thurman",
+  "name": "generic",
   "version": "0.0.1",
-  "description": "Lauded thurman API",
+  "description": "Generic Express.js API",
   "main": "server.js",
   "scripts": {
     "babel": "babel --presets es2015 src/server.js -o build/server.js",
