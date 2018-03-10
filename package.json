@@ -1,0 +1,37 @@
+{
+  "name": "thurman",
+  "version": "0.0.1",
+  "description": "Lauded thurman API",
+  "main": "src/index.js",
+  "scripts": {
+    "babel": "babel --presets es2015 src/server.js -o build/server.js",
+    "start": "node build/server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.2.2",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-es2015": "^6.24.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.1",
+    "gulp-eslint": "^4.0.2",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.6.4",
+    "lazypipe": "^1.0.1"
+  },
+  "dependencies": {
+    "babel-runtime": "^6.26.0",
+    "body-parser": "^1.18.2",
+    "compression": "^1.7.2",
+    "errorhandler": "^1.5.0",
+    "express": "^4.16.2",
+    "lodash": "^4.17.5",
+    "method-override": "^2.3.10",
+    "morgan": "^1.9.0",
+    "winston": "^3.0.0-rc2"
+  }
+}
