@@ -44,4 +44,12 @@ Right now there's a shadow package.json.docker file which gets copied
 to the `build/` directory.  It has the correct npm start command for
 when running from within that directory.
 
+## Testing
 
+Testing is a little week.  There's a primitive unit test for routes
+using mocha, chai, and sinon-chai.  It's seen in used
+in `src/api/v1/hello/index.spec.js` and run with the command `gulp test`.
+
+There is a more typical functional test using mocha & chai run via
+`npm test` after first building with `gulp`.  This test is implemented
+via `src/test/test.js`. 
