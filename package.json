@@ -6,7 +6,7 @@
   "scripts": {
     "babel": "babel --presets es2015 src/server.js -o build/server.js",
     "start": "node build/server.js",
-    "test": "mocha --exit build/test/test.js"
+    "test": "NODE_ENV=test mocha --exit build/test/test.js"
   },
   "author": "",
   "license": "ISC",
