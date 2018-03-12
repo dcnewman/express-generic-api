@@ -34,7 +34,7 @@ or
 
 ## Running with Docker
 
-    sudo docker build -t thurman:0.1-SNAPSHOT build/
+    sudo docker build -t thurman:0.1-SNAPSHOT build
     sudo docker run -d -e NODE_ENV=development \
       -e LOG_LEVEL=debug \
       --name thurman --restart=always -p 80:9000 thurman:0.1-SNAPSHOT
