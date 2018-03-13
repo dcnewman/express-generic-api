@@ -1,14 +1,18 @@
 'use strict';
 
-var gulp = require('gulp');
-var lazypipe = require('lazypipe');
+import fs from 'fs';
+import gulp from 'gulp';
+import lazypipe from 'lazypipe';
+import rename from 'gulp-rename';
+import runSequence from 'run-sequence';
+import nodemon from 'gulp-nodemon';
+import mongoose from 'mongoose';
+import {spawn} from 'child_process';
+
 var plugins = require('gulp-load-plugins')();
-var rename = require('gulp-rename');
-var runSequence = require('run-sequence');
 
 const srcPath = './src';
 const buildPath = './build';
-
 const paths = {
   src: `${srcPath}/**/!(*.spec).js`,
   build: `${buildPath}/`,
@@ -17,6 +21,34 @@ const paths = {
   }
 };
 
+// Ensure mongod is up
+function checkDbReady(cb) {
+  let config = require(`./${srcPath}/config`);
+  mongoose.connect(config.mongo.uri);
+  var db = mongoose.connection;
+  db.on('error', () => cb(false));
+  db.once('open', () => {
+    db.close();
+    cb(true);
+  });
+}
+
+// Start mongod running
+function whenMongoReady(cb) {
+  var dbReady = false;
+  var dbReadyInterval = setInterval(() =>
+      checkDbReady(ready => {
+        if (!ready || dbReady) {
+          return;
+        }
+        clearInterval(dbReadyInterval);
+        dbReady = true;
+        cb();
+      }),
+    100);
+}
+
+// Transpile the server sources
 let transpileServer = lazypipe()
   .pipe(plugins.sourcemaps.init)
   .pipe(plugins.babel, {
@@ -27,37 +59,47 @@ let transpileServer = lazypipe()
   })
   .pipe(plugins.sourcemaps.write, '.');
 
-let lintServerScripts = lazypipe()
+gulp.task('transpile:server', () => {
+  return gulp.src(paths.src)
+    .pipe(transpileServer())
+    .pipe(gulp.dest(`${paths.build}`));
+});
+
+
+// Lint the server sources
+let lintServer = lazypipe()
   .pipe(plugins.eslint, 'src/.eslintrc')
   .pipe(plugins.eslint.format);
 
-let lintTestScripts = lazypipe()
+gulp.task('lint:server', () => {
+  return gulp.src([paths.src, `!${srcPath}/test/*`])
+    .pipe(lintServer());
+});
+
+// Lint the test scripts
+let lintTests = lazypipe()
   .pipe(plugins.eslint, {
     configFile: `${srcPath}/.eslintrc`,
     envs: ['node', 'mocha']
   })
   .pipe(plugins.eslint.format);
 
-gulp.task('lint:server', function () {
-  return gulp.src([ paths.src, `!${srcPath}/test/*`])
-    .pipe(lintServerScripts());
+gulp.task('lint:scripts:test', () => {
+  return gulp.src(paths.test.unit)
+    .pipe(lintTests());
 });
 
+// Build environment for tests
 gulp.task('env:test', () => {
   plugins.env({vars: {NODE_ENV: 'test'}});
 });
 
-gulp.task('transpile:server', function () {
-  return gulp.src(paths.src)
-    .pipe(transpileServer())
-    .pipe(gulp.dest(`${paths.build}`));
+// Build environment for development
+gulp.task('env:dev', () => {
+  plugins.env({vars: {NODE_ENV: 'development'}});
 });
 
-gulp.task('lint:scripts:test', () => {
-  return gulp.src(paths.test.unit)
-    .pipe(lintTestScripts());
-});
-
+// Docker-related files: copy to the build directory
 gulp.task('copy:docker', () => {
   return gulp.src('./Dockerfile')
     .pipe(gulp.dest(`${paths.build}`));
@@ -69,6 +111,8 @@ gulp.task('copy:package.json', () => {
     .pipe(gulp.dest(`${paths.build}`));
 });
 
+
+// Mocha for the test environment
 let mocha = lazypipe()
   .pipe(plugins.mocha, {
     reporter: 'spec',
@@ -83,6 +127,7 @@ gulp.task('mocha:unit', () => {
     .pipe(mocha());
 });
 
+// Run the test suite
 gulp.task('test', cb => {
   runSequence(
     'env:test',
@@ -90,4 +135,65 @@ gulp.task('test', cb => {
     cb);
 });
 
+// Run development build with a running Mongo DB
+function onServerLog(log) {
+  console.log(plugins.util.colors.white('[') +
+    plugins.util.colors.yellow('nodemon') +
+    plugins.util.colors.white('] ') +
+    log.message);
+}
+
+gulp.task('start:server', () => {
+  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+  let config = require(`./${srcPath}/config`);
+  let mongoLocal = config.mongo.uri.startsWith('mongodb://localhost') ||
+    config.mongo.uri.startsWith('mongodb://127.0.0.1') ||
+    config.mongo.uri.indexOf('@localhost:') > 0 ||
+    config.mongo.uri.indexOf('@127.0.0.1:') > 0;
+  let opts = {
+    script: `${buildPath}/server.js`,
+    watch: `${srcPath}`,
+    tasks: ['transpile:server', 'lint:server']
+  };
+
+  // Launch mongod --dbpath ./db
+  if (mongoLocal && !(process.env.MONGODB_URI || process.env.MONGODB_URL)) {
+    // Ensure that ./db/ exists
+    if (!fs.existsSync('.db')) {
+      fs.mkdirSync('.db');
+    }
+    console.log('Launching mongodb');
+    let child = spawn('mongod', ['--config', './mongod.conf', '--dbpath', '.db']);
+    child.stderr.on('data', function (data) {
+      console.log('mongodb error: ' + data);
+    });
+
+    // Once mongod is running and can be connected to, start node
+    whenMongoReady(() => {
+      nodemon(opts).on('log', onServerLog);
+    });
+  }
+  else
+    nodemon(opts).on('log', onServerLog);
+});
+
+gulp.task('watch:server', () => {
+  plugins.watch([paths.src])
+    .pipe(plugins.plumber())
+    .pipe(lintServer())
+  plugins.watch([paths.src])
+    .pipe(plugins.plumber())
+    .pipe(transpileServer());
+});
+
+gulp.task('serve', cb => {
+  runSequence(
+    ['lint:server', 'transpile:server'],
+    // 'watch:server',
+    'start:server',
+    cb
+  );
+});
+
+// Normal build: lint, transpile, prepare for Docker
 gulp.task('default', ['lint:server', 'transpile:server', 'copy:docker', 'copy:package.json']);
