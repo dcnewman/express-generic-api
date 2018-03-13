@@ -4,12 +4,29 @@
 
 'use strict';
 
+import mongoose from 'mongoose';
 import express from 'express';
 import http from 'http';
 import _ from 'lodash';
 import config from './config';
 import logger from './lib/logger';
 
+// Connect to MongoDB
+//   We do this early on for purposes of bailing out now if there's
+//   an issue with db connectivity.  Do this before we establish
+//   error handlers as part of the Express.js configuration.
+if (config.mongo.debug) {
+  mongoose.set('debug', true);
+}
+
+mongoose.connect(config.mongo.uri, config.mongo.options);
+mongoose.connection.on('error', function(err) {
+  logger.log(logger.ERR, `MongoDB connection error: ${err}`);
+  console.error(`MongoDB connection error: ${err}`);
+  throw new Error(`Unable to connect to MongoDB; connection error "${err}"`);
+});
+
+// Create the Express.js app
 const app = express();
 const server = http.createServer(app);
 
