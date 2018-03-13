@@ -24,19 +24,26 @@ const paths = {
 // Ensure mongod is up
 function checkDbReady(cb) {
   let config = require(`./${srcPath}/config`);
-  mongoose.connect(config.mongo.uri);
-  var db = mongoose.connection;
-  db.on('error', () => cb(false));
-  db.once('open', () => {
-    db.close();
-    cb(true);
-  });
+  let db;
+  try {
+    mongoose.connect(config.mongo.uri);
+    db = mongoose.connection;
+    db.on('error', () => cb(false));
+    db.once('open', () => {
+      db.close();
+      cb(true);
+    });
+  }
+  catch (err) {
+    if (db) db.close();
+    cb(false);
+  }
 }
 
 // Start mongod running
 function whenMongoReady(cb) {
-  var dbReady = false;
-  var dbReadyInterval = setInterval(() =>
+  let dbReady = false;
+  let dbReadyInterval = setInterval(() =>
       checkDbReady(ready => {
         if (!ready || dbReady) {
           return;
@@ -45,7 +52,7 @@ function whenMongoReady(cb) {
         dbReady = true;
         cb();
       }),
-    100);
+    1000);
 }
 
 // Transpile the server sources
