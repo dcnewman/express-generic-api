@@ -6,7 +6,7 @@ public
 .idea
 build
 mongo-secrets.txt
-src/config/secrets.js
+server/config/secrets.js
 *~
 
 ######################
