@@ -119,13 +119,12 @@ export default function(app) {
    *  Morgan logging library
    *  https://github.com/expressjs/morgan
    */
-  if (env === 'development' || env === 'test') {
+  if (env === 'prooduction') {
+    app.use(morgan('combined', { stream: logger.stream }));
+  }
+  else if (env !== 'test') {
     // Morgan's development format
     app.use(morgan('dev', { stream: logger.stream }));
-  }
-  else {
-    // Morgan's 'combined' format
-    app.use(morgan('combined', { stream: logger.stream }));
   }
 
   /**
