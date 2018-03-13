@@ -4,4 +4,10 @@
 
 'use strict';
 
-module.exports = { /* nothing here, move on */ };
+import secrets from './secrets';
+
+module.exports = {
+  mongo: {
+    uri: process.env.MONGO_URI || secrets.mongo_uri || 'mongodb://localhost:27017'
+  }
+};

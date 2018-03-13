@@ -4,6 +4,7 @@
 'use strict';
 
 import _ from 'lodash';
+import Promise from 'bluebird';
 
 // Do not use const as _.merge() mutates its first argument
 var all = {
@@ -50,6 +51,18 @@ var all = {
    */
   max_urlencoded: '100kb',
   max_json: '100kb',
+
+  /**
+   *  Mongo db info
+   */
+  mongo: {
+    debug: process.env.MONGODB_DEBUG || false,
+    options: {
+      autoIndex: process.env.MONGODB_AUTO_INDEX || false,
+      promiseLibrary: Promise, // same as require('bluebird')
+      w: 'safe' // write concern
+    }
+  },
 
   /**
    *  DO NOT BIND TO privileged TCP PORTS!!! (Generally, ports < 1024)
