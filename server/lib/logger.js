@@ -107,7 +107,7 @@ function logLevel(lvl) {
   let old_level = log_level;
   if (0 <= lvl && lvl < log_level_str.length) {
     log_level = lvl;
-    logger.transports.console.level = log_level_str[lvl];
+    logger.transports[0].level = log_level_str[lvl];
   }
   return old_level;
 }
