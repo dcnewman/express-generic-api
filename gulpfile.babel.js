@@ -11,19 +11,19 @@ import {spawn} from 'child_process';
 
 var plugins = require('gulp-load-plugins')();
 
-const srcPath = './src';
+const serverPath = './server';
 const buildPath = './build';
 const paths = {
-  src: `${srcPath}/**/!(*.spec).js`,
+  server: `${serverPath}/**/!(*.spec).js`,
   build: `${buildPath}/`,
   test: {
-    unit: `${srcPath}/**/*.spec.js`
+    unit: `${serverPath}/**/*.spec.js`
   }
 };
 
 // Ensure mongod is up
 function checkDbReady(cb) {
-  let config = require(`./${srcPath}/config`);
+  let config = require(`./${serverPath}/config`);
   let db;
   try {
     mongoose.connect(config.mongo.uri);
@@ -67,7 +67,7 @@ let transpileServer = lazypipe()
   .pipe(plugins.sourcemaps.write, '.');
 
 gulp.task('transpile:server', () => {
-  return gulp.src(paths.src)
+  return gulp.src(paths.server)
     .pipe(transpileServer())
     .pipe(gulp.dest(`${paths.build}`));
 });
@@ -75,18 +75,18 @@ gulp.task('transpile:server', () => {
 
 // Lint the server sources
 let lintServer = lazypipe()
-  .pipe(plugins.eslint, 'src/.eslintrc')
+  .pipe(plugins.eslint, `${serverPath}/.eslintrc`)
   .pipe(plugins.eslint.format);
 
 gulp.task('lint:server', () => {
-  return gulp.src([paths.src, `!${srcPath}/test/*`])
+  return gulp.src([paths.server, `!${serverPath}/test/*`])
     .pipe(lintServer());
 });
 
 // Lint the test scripts
 let lintTests = lazypipe()
   .pipe(plugins.eslint, {
-    configFile: `${srcPath}/.eslintrc`,
+    configFile: `${serverPath}/.eslintrc`,
     envs: ['node', 'mocha']
   })
   .pipe(plugins.eslint.format);
@@ -152,14 +152,14 @@ function onServerLog(log) {
 
 gulp.task('start:server', () => {
   process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-  let config = require(`./${srcPath}/config`);
+  let config = require(`./${serverPath}/config`);
   let mongoLocal = config.mongo.uri.startsWith('mongodb://localhost') ||
     config.mongo.uri.startsWith('mongodb://127.0.0.1') ||
     config.mongo.uri.indexOf('@localhost:') > 0 ||
     config.mongo.uri.indexOf('@127.0.0.1:') > 0;
   let opts = {
     script: `${buildPath}/server.js`,
-    watch: `${srcPath}`,
+    watch: `${serverPath}`,
     tasks: ['transpile:server', 'lint:server']
   };
 
@@ -184,19 +184,9 @@ gulp.task('start:server', () => {
     nodemon(opts).on('log', onServerLog);
 });
 
-gulp.task('watch:server', () => {
-  plugins.watch([paths.src])
-    .pipe(plugins.plumber())
-    .pipe(lintServer())
-  plugins.watch([paths.src])
-    .pipe(plugins.plumber())
-    .pipe(transpileServer());
-});
-
 gulp.task('serve', cb => {
   runSequence(
     ['lint:server', 'transpile:server'],
-    // 'watch:server',
     'start:server',
     cb
   );
