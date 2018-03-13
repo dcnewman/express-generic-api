@@ -9,7 +9,7 @@
 
 import errorHandler from 'errorhandler';
 import logger from './lib/logger';
-import errors from './components/errors';
+import errors from './errors';
 
 export default function(app) {
 
