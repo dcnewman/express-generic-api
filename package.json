@@ -2,7 +2,7 @@
   "name": "generic",
   "version": "0.0.1",
   "description": "Generic Express.js API",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
     "babel": "babel --presets es2015 src/server.js -o build/server.js",
     "start": "node build/server.js",
