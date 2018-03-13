@@ -17,7 +17,8 @@ const paths = {
   server: `${serverPath}/**/!(*.spec).js`,
   build: `${buildPath}/`,
   test: {
-    unit: `${serverPath}/**/*.spec.js`
+    unit: `${serverPath}/**/*.spec.js`,
+    server: `${serverPath}/**/!(*.spec).js`
   }
 };
 
@@ -42,6 +43,28 @@ function checkDbReady(cb) {
 
 // Start mongod running
 function whenMongoReady(cb) {
+  let config = require(`./${serverPath}/config`);
+  let mongoLocal = config.mongo.uri.startsWith('mongodb://localhost') ||
+    config.mongo.uri.startsWith('mongodb://127.0.0.1') ||
+    config.mongo.uri.indexOf('@localhost:') > 0 ||
+    config.mongo.uri.indexOf('@127.0.0.1:') > 0;
+
+  // Launch mongod --dbpath ./db
+  if (!mongoLocal || process.env.MONGODB_URI || process.env.MONGODB_URL) {
+    cb();
+    return;
+  }
+
+  // Ensure that ./db/ exists
+  if (!fs.existsSync('.db')) {
+    fs.mkdirSync('.db');
+  }
+  console.log('Launching mongodb');
+  let child = spawn('mongod', ['--config', './mongod.conf', '--dbpath', '.db']);
+  child.stderr.on('data', function (data) {
+    console.log('mongodb error: ' + data);
+  });
+
   let dbReady = false;
   let dbReadyInterval = setInterval(() =>
       checkDbReady(ready => {
@@ -122,6 +145,7 @@ gulp.task('copy:package.json', () => {
 // Mocha for the test environment
 let mocha = lazypipe()
   .pipe(plugins.mocha, {
+    exit: true,
     reporter: 'spec',
     timeout: 5000,
     require: [
@@ -135,10 +159,29 @@ gulp.task('mocha:unit', () => {
 });
 
 // Run the test suite
-gulp.task('test', cb => {
+gulp.task('test:unit', cb => {
   runSequence(
     'env:test',
     'mocha:unit',
+    cb);
+});
+
+gulp.task('mocha:server', cb => {
+  return gulp.src(`${buildPath}/test/test.js`, {read: false})
+    .pipe(mocha({exit: true}));
+});
+
+gulp.task('start:server:test', cb => {
+  // Once mongod is running and can be connected to, start node
+  whenMongoReady(cb);
+});
+
+gulp.task('test',  cb => {
+  runSequence(
+    ['lint:server', 'transpile:server'],
+    'env:test',
+    'start:server:test',
+    'mocha:server',
     cb);
 });
 
@@ -151,42 +194,20 @@ function onServerLog(log) {
 }
 
 gulp.task('start:server', () => {
-  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-  let config = require(`./${serverPath}/config`);
-  let mongoLocal = config.mongo.uri.startsWith('mongodb://localhost') ||
-    config.mongo.uri.startsWith('mongodb://127.0.0.1') ||
-    config.mongo.uri.indexOf('@localhost:') > 0 ||
-    config.mongo.uri.indexOf('@127.0.0.1:') > 0;
-  let opts = {
-    script: `${buildPath}/server.js`,
-    watch: `${serverPath}`,
-    tasks: ['transpile:server', 'lint:server']
-  };
-
-  // Launch mongod --dbpath ./db
-  if (mongoLocal && !(process.env.MONGODB_URI || process.env.MONGODB_URL)) {
-    // Ensure that ./db/ exists
-    if (!fs.existsSync('.db')) {
-      fs.mkdirSync('.db');
-    }
-    console.log('Launching mongodb');
-    let child = spawn('mongod', ['--config', './mongod.conf', '--dbpath', '.db']);
-    child.stderr.on('data', function (data) {
-      console.log('mongodb error: ' + data);
-    });
-
-    // Once mongod is running and can be connected to, start node
-    whenMongoReady(() => {
-      nodemon(opts).on('log', onServerLog);
-    });
-  }
-  else
-    nodemon(opts).on('log', onServerLog);
+  // Once mongod is running and can be connected to, start node
+  whenMongoReady(() => {
+    nodemon({
+      script: `${buildPath}/server.js`,
+      watch: `${serverPath}`,
+      tasks: ['transpile:server', 'lint:server']
+    }).on('log', onServerLog);
+  });
 });
 
 gulp.task('serve', cb => {
   runSequence(
     ['lint:server', 'transpile:server'],
+    'env:dev',
     'start:server',
     cb
   );
