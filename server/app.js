@@ -32,7 +32,12 @@ const server = http.createServer(app);
 
 // Indicate what or runtime "environment" is (e.g., "production", "development", "test")
 //   Note: index.js should already have ensured that NODE_ENV exists, but just in case
-app.set('env', process.env.NODE_ENV || 'development');
+var env = process.env.NODE_ENV || 'development';
+app.set('env', env);
+
+if (env === 'production') logger.logLevel(logger.INFO);
+else if (env === 'test') logger.logLevel(logger.EMERG); // suppress logging for testing
+else logger.logLevel(logger.DEBUG);
 
 // Configure express.js
 require('./express').default(app);
