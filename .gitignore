@@ -5,7 +5,8 @@ public
 .sass-cache
 .idea
 build
-swagger/api-tmp.json
+mongo-secrets.txt
+src/config/secrets.js
 *~
 
 ######################
