@@ -4,7 +4,7 @@
   "description": "Generic Express.js API",
   "main": "server.js",
   "scripts": {
-    "babel": "babel --presets es2015 src/server.js -o build/server.js",
+    "babel": "babel --presets es2015 server/server.js -o build/server.js",
     "start": "node server.js",
     "test": "NODE_ENV=test mocha --exit build/test.js"
   },
