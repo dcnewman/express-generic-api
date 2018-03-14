@@ -1,9 +1,9 @@
 ## Express.js API skeleton
 
-* `gulpfile.js`: Simple build using babel with the command "gulp".  Builds to `build/` directory.
+* `gulpfile.babel.js`: Simple build using babel with the command "gulp".  Builds to `build/` directory.
 * `package.json`: Core packages; install with "npm install".
-* `src/`: Source files
-    * `server.js`: Very simply shell for the server.
+* `server/`: Server source files
+    * `server.js`: Very simple shell for the server.
     * `app.js`: Invokes `express.js` and `routes.js`; 
          instantiates the HTTP server.
     * `express.js`: Configures Express and plugs in middleware.
@@ -11,9 +11,14 @@
     * `.eslintrc`: Additional eslint defaults for server sources.
     * `api/v1/`: Controllers for the endpoints.
     * `components/errors/`: Needless abstraction?
+    * `db_models/`: Mongoose db models.
+    * `schemas/`: Mongoose db schemas.
     * `lib/`: Library routines (logging via Winston).
 * `Dockerfile`: Care to run under/within Docker?
 * `package.json.docker`: Used by the Docker setup.
+* `mocha.conf.js`: "Main" for running Mocha Chai tests.
+* `mongod.conf`: Config file for running a local mongo db server
+   while testing.
 * `.babelrc`: Babel defaults.
 * `.editorconfig`: Generic editor preferences.
 * `.eslintrc`: Eslint preferences.
@@ -23,7 +28,11 @@
 
     npm install
     gulp
-    
+ 
+ # Need mongo?
+ 
+    npm install mongodb-prebuilt
+ 
 ## Running
 
     NODE_ENV=production node build/index.js
@@ -31,6 +40,12 @@
 or
 
     NODE_ENV=production npm start
+
+To run in development mode,
+
+    gulp serve
+
+This will fire up a local mongo db server if needed.
 
 ## Running with Docker
 
@@ -46,10 +61,10 @@ when running from within that directory.
 
 ## Testing
 
-Testing is a little week.  There's a primitive unit test for routes
-using mocha, chai, and sinon-chai.  It's seen in used
-in `src/api/v1/hello/index.spec.js` and run with the command `gulp test`.
-
-There is a more typical functional test using mocha & chai run via
-`npm test` after first building with `gulp`.  This test is implemented
-via `src/test/test.js`. 
+Testing is a little weak:
+  
+  * `gulp test`: run functional tests with Mocha & Chai.  This will
+     fire up a local mongo db if needed.
+  * `gulp test:routes`: this uses sinon-chai as well to do some
+     admittedly unusual testing to see if express routes really
+     call the expected API routines.
