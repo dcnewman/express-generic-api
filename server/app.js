@@ -1,5 +1,5 @@
 /**
- *  Instantiate the 'app' -- instantiate the HTTP server
+ *  Instantiate the 'app'; i.e., get the HTTP server up and running!
  */
 
 'use strict';
@@ -12,32 +12,37 @@ import config from './config';
 import logger from './lib/logger';
 
 // Connect to MongoDB
-//   We do this early on for purposes of bailing out now if there's
-//   an issue with db connectivity.  Do this before we establish
-//   error handlers as part of the Express.js configuration.
+//   We do this early on for purposes of promptly bailing out if there's
+//   an issue with db connectivity.  Do this before we establish error
+//   handlers as part of the Express.js configuration.
+
 if (config.mongo.debug) {
+  // Debug logging please
   mongoose.set('debug', true);
 }
 
 mongoose.connect(config.mongo.uri, config.mongo.options);
 mongoose.connection.on('error', function(err) {
+  // Got an error?  Bail.  BAIL HARD.
   logger.log(logger.ERR, `MongoDB connection error: ${err}`);
   console.error(`MongoDB connection error: ${err}`);
   throw new Error(`Unable to connect to MongoDB; connection error "${err}"`);
 });
 
-// Create the Express.js app
-const app = express();
-const server = http.createServer(app);
-
-// Indicate what or runtime "environment" is (e.g., "production", "development", "test")
+// Indicate what our runtime "environment" is (e.g., "production", "development", "test")
 //   Note: index.js should already have ensured that NODE_ENV exists, but just in case
 var env = process.env.NODE_ENV || 'development';
-app.set('env', env);
 
-if (env === 'production') logger.logLevel(logger.INFO);
-else if (env === 'test') logger.logLevel(logger.EMERG); // suppress logging for testing
-else logger.logLevel(logger.DEBUG);
+// Different logging levels for different modes
+//   But the LOG_LEVEL environment variable always trumps
+if (env === 'production') logger.logLevel(process.env.LOG_LEVEL || logger.INFO);
+else if (env === 'test') logger.logLevel(process.env.LOG_LEVEL || logger.EMERG); // suppress logging for testing
+else logger.logLevel(process.env.LOG_LEVEL || logger.DEBUG);
+
+// Create the Express.js app (finally)
+const app = express();
+const server = http.createServer(app);
+app.set('env', env);
 
 // Configure express.js
 require('./express').default(app);
@@ -46,8 +51,8 @@ require('./express').default(app);
 require('./routes').default(app);
 
 // Start the server running.  We provide this as a function so we
-// can push it to the end of the event loop with setImmediate().
-function startServer() {
+//  can push it to the end of the event loop with setImmediate().
+setImmediate(() => {
   server.listen(config.port, config.ip, function() {
 
     logger.log(logger.NOTICE, `Express server listening on ${config.ip ? config.ip : ''}:${config.port} in ${app.get('env')} mode`);
@@ -74,9 +79,6 @@ function startServer() {
       logger.log(logger.NOTICE, 'Leaving uid and gid unchanged');
     }
   });
-}
-
-// Start the app running
-setImmediate(startServer);
+});
 
 module.exports = app;

@@ -31,7 +31,7 @@ export default function(app) {
     });
 
   /**
-   *  All other endpoints
+   *  And the endpoints of interest
    */
   app.use('/api/v1/hello', require('./api/v1/hello'));
 
@@ -51,6 +51,10 @@ export default function(app) {
   else {
     /**
      *  Exception handlers
+     *
+     *     We use the full signature below, including 'next', as once upon a
+     *     time, Express.js had this little bug whereby this didn't work
+     *     if the signature lacked 'next'....
      */
     // eslint-disable-next-line no-unused-vars
     app.use((err, req, res, next) => {

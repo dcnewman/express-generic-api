@@ -4,6 +4,7 @@ import config from '../config';
 import _ from 'lodash';
 
 // Handle a schema validation error by sending back a 422 (or other code)
+//   Log the error to the console in development mode
 export function validationError(res, statusCode) {
   statusCode = statusCode || 422;
   return function(err) {
@@ -15,6 +16,7 @@ export function validationError(res, statusCode) {
 }
 
 // Handle an error from mongoose by sending back a 500 (or other code)
+//   Log the error to the console in development mode
 export function handleError(res, statusCode) {
   statusCode = statusCode || 500;
   return function (err) {

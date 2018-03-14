@@ -1,7 +1,6 @@
 /**
  *  Express.js configuration
- *  We here configure express and the assorted pieces of middleware
- *  we intend to use.
+ *  We here configure express and the assorted pieces of middleware we intend to use.
  *
  *  Ordering of some/much of the middleware is important (e.g., compression
  *  middleware before establishing handling of static files).

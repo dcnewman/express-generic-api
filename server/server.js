@@ -5,15 +5,8 @@
 'use strict';
 
 // Force NODE_ENV if not set
-// eslint-disable-next-line no-unused-vars
-var env = process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
-/*
-if (env === 'development' || env === 'test') {
-  // Register the Babel require hook
-  require('babel-register');
-}
-*/
-
-// Export the application
+// For Mocha testing, we actually need to export this.
+// Otherwise, we could just do "require('./app');" and all would be fine.
 module.exports = require('./app');
