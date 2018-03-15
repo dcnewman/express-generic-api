@@ -59,8 +59,7 @@ var all = {
     debug: process.env.MONGODB_DEBUG || false,
     options: {
       autoIndex: process.env.MONGODB_AUTO_INDEX || false,
-      promiseLibrary: Promise, // same as require('bluebird')
-      w: 'safe' // write concern
+      promiseLibrary: Promise // same as require('bluebird')
     }
   },
 
